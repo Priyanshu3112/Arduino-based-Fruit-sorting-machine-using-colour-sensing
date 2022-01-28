@@ -1,0 +1,79 @@
+#include<Servo.h>
+Servo servo;
+
+#define S0 4 // colour sensor pins
+#define S1 5
+#define S2 6
+#define S3 7
+#define sensorOut 8
+int x = 0;
+int frequency = 0;
+int in1 = 9; //Declaring where L298N module is wired
+int in2 = 10;
+int ConA = 11; // this is a PWM DI/DO0.
+int speed1;    //SPEED CONTROLLING VARIABLE FOR POTENTIOMETER
+int IR_Sensor1 = 50;
+int Relay = 2;
+void setup()
+{
+  pinMode(8, OUTPUT);
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(IR_Sensor1, INPUT);
+  pinMode(Relay, OUTPUT);
+  pinMode(S0, OUTPUT);
+  pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
+  pinMode(sensorOut, INPUT); // Setting frequency-scaling to 20%
+  digitalWrite(S0, HIGH);
+  digitalWrite(S1, LOW);
+  servo.attach(12);
+  Serial.begin(9600);
+}
+void loop() 
+{
+  digitalWrite(in1, HIGH); //Switch between this HIGH and LOW to change direction
+  digitalWrite(in2, LOW);
+  speed1 = analogRead(A1);
+  speed1 = speed1 * 0.2492665622; //We read thea analog value from the potentiometer calibrate it
+  analogWrite(ConA, speed1);
+
+  if  (digitalRead(IR_Sensor1) == 0)
+  {
+    digitalWrite(Relay, LOW);
+    delay(600); 
+  }
+  else 
+  {
+    digitalWrite(Relay, HIGH);
+    delay(1000);// Reaching Time upto Color Sensor
+  }
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, LOW);
+  frequency = pulseIn(sensorOut, LOW);
+  x= checking(frequency);
+   digitalWrite(Relay, HIGH);
+   delay(1000);// Stop here for 5sec. for sense the frequency of the color
+}
+
+int checking(int u)
+{
+    if (u > 50 && u < 90)
+  {
+    Serial.println("Ripened Fruit");
+    servo.write(140); 
+    digitalWrite(Relay, LOW);
+    delay(1150);
+  }
+  else if (u > 120 && u < 180)
+  {
+    Serial.println("Unripened Fruit");
+    servo.write(30);
+  }
+  else
+  {
+    Serial.println("empty");
+    servo.write(0);
+  }
+}
