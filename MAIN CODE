@@ -1,0 +1,182 @@
+#include <Servo.h>
+
+Servo myservo;
+
+#define ir1 2 //ir sensor 
+#define ir2 3 //ir sensor
+
+#define pot  A0 //potentiometer
+
+#define m1 11   // l298 M2
+#define m2 12   // l298 M2
+#define pwm 10  //pwm output
+
+
+int sen1, sen2;
+int flag=0, GF=0, RF=0;
+int AR,MAR;
+int pos=0;
+
+#define S0 4
+#define S1 5
+#define S2 6
+#define S3 7
+#define sensorOut 8
+int redfrequency = 0;
+int greenfrequency = 0;
+int bluefrequency = 0;
+
+void setup() 
+{
+  Serial.begin(115200);
+  
+  pinMode(ir1,INPUT);
+  pinMode(ir2,INPUT);
+
+  pinMode(m1,OUTPUT);
+  pinMode(m2,OUTPUT);
+  pinMode(pwm,OUTPUT);
+
+  myservo.attach(9);  // servo pin 
+
+  pinMode(S0, OUTPUT);
+  pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
+  pinMode(sensorOut, INPUT);
+  
+  // Setting frequency-scaling to 20%
+  digitalWrite(S0,HIGH);
+  digitalWrite(S1,LOW);
+
+  digitalWrite(m1,0);
+  digitalWrite(m2,0);
+  digitalWrite(pwm,0);
+  
+  Serial.println("Starting.....");
+  sweep();
+  
+  delay(1000);
+  
+}
+
+void loop() 
+{
+  
+  sen1= (digitalRead(ir1));
+  sen2= (digitalRead(ir2));
+  Serial.print("sen1: "); Serial.println(sen1);
+  Serial.print("sen2: "); Serial.println(sen2);
+  AR = analogRead(pot);
+  MAR = map(AR, 0,1000, 0,255);
+  //MAR=255;
+  Serial.print("MAR: "); Serial.println(MAR);
+
+  if (sen1 == 0 && GF == 0)
+  {
+   Serial.print("sen1: "); Serial.println(sen1);
+   Serial.println("Starting Conveor");
+   //delay(2000);
+    // start motor
+   analogWrite(pwm,MAR);
+   digitalWrite(m1,1);
+   digitalWrite(m2,0);
+   RF = 1;
+   GF = 1;
+  }
+  
+ if (sen2 == 0 && RF == 1)
+ {
+   Serial.print("sen2: "); Serial.println(sen2);
+   Serial.println("Stoping Conveor");
+   delay(1200);
+    // stop motor
+   analogWrite(pwm,0);
+   digitalWrite(m1,0);
+   digitalWrite(m2,0);
+
+    // call colour sensor function
+   Serial.println("Calling colour function");
+   colour();
+   Serial.print("Flag: "); Serial.println(flag);
+   
+   if(flag == 1) // red
+   {
+    myservo.write(75);
+    Serial.println("Servo 75 degree");
+    //delay(500);
+   }
+   else if(flag == 2)
+   {
+    myservo.write(0);
+    Serial.println("Servo 180 degree");
+    //delay(500);
+   }
+   delay(1000);
+   
+   
+   Serial.println("Starting Conveor");
+    // start motor
+   analogWrite(pwm,MAR);
+   digitalWrite(m1,1);
+   digitalWrite(m2,0);
+  
+   delay(3500);
+   
+   Serial.println("Stoping Conveor");
+    // stop conv
+   digitalWrite(m1,0);
+   digitalWrite(m2,0);
+   analogWrite(pwm,0);
+  GF=0;
+  RF=0;
+  myservo.write(40);
+  delay(2000);
+ }
+//delay(2000);
+}
+
+void colour()
+{
+    // Setting red filtered photodiodes to be read
+  digitalWrite(S2,LOW);
+  digitalWrite(S3,LOW);
+  // Reading the output frequency
+   redfrequency = pulseIn(sensorOut, LOW);
+ 
+  delay(100);
+  // Setting Green filtered photodiodes to be read
+  digitalWrite(S2,HIGH);
+  digitalWrite(S3,HIGH);
+  // Reading the output frequency
+  greenfrequency = pulseIn(sensorOut, LOW);
+  // Printing the value on the serial monitor
+ 
+  delay(100);
+  // Setting Blue filtered photodiodes to be read
+  digitalWrite(S2,LOW);
+  digitalWrite(S3,HIGH);
+  // Reading the output frequency
+  bluefrequency = pulseIn(sensorOut, LOW);
+  // Printing the value on the serial monitor
+
+ Serial.print("R: "); Serial.print(redfrequency); Serial.print("  G: "); Serial.print(greenfrequency); Serial.print("  B: "); Serial.println(bluefrequency);
+
+ if((redfrequency>=13 && redfrequency<=25) && (greenfrequency>=40 && greenfrequency<=50))      { flag=1; Serial.print("RED colour"); } else{}
+ if((redfrequency>=26 && redfrequency<=40) && (greenfrequency>=35 && greenfrequency<=43))  { flag=2; Serial.print("Green colour"); } else{}
+ 
+  //Serial.print(" Real Flag: "); Serial.println(flag);
+  return 0;
+}
+void sweep()
+{
+  for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(5);                       // waits 15ms for the servo to reach the position
+  }
+  for (pos = 180; pos >= 40; pos -= 1) { // goes from 180 degrees to 0 degrees
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(5);                       // waits 15ms for the servo to reach the position
+  }
+}
